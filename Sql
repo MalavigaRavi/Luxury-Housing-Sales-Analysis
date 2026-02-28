@@ -1,0 +1,20 @@
+
+# ------------------------------------------------
+# LOAD TO POSTGRESQL
+# ------------------------------------------------
+def load_to_sql(df):
+
+    print("Connecting to PostgreSQL...")
+
+    engine = create_engine(
+        f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
+
+    df.to_sql(
+        "housing_sales",
+        engine,
+        if_exists="replace",
+        index=False
+    )
+
+    print("✅ Data successfully loaded into PostgreSQL!")
