@@ -1,0 +1,193 @@
+import pandas as pd
+import numpy as np
+from sqlalchemy import create_engine
+
+# ------------------------------------------------
+# CONFIGURATION
+# ------------------------------------------------
+RAW_DATA_PATH = r"D:\DS_Projects\Luxury_sales\Luxury_Housing_Bangalore.csv"
+
+DB_USER = "postgres"
+DB_PASSWORD = "Malu%401811"
+DB_HOST = "localhost"
+DB_PORT = "5432"
+DB_NAME = "luxury_housing"
+
+
+# ------------------------------------------------
+# LOAD DATA
+# ------------------------------------------------
+def load_data(file_path):
+    print("Loading data...")
+
+    df = pd.read_csv(file_path)
+
+    print(f"Dataset Loaded: {df.shape[0]} rows, {df.shape[1]} columns")
+    print(df.columns)
+
+    return df
+
+
+# ------------------------------------------------
+# CLEAN PRICE COLUMN
+# ------------------------------------------------
+def clean_ticket_price(df):
+
+    if 'Ticket_Price_Cr' in df.columns:
+        df['Ticket_Price_Cr'] = (
+            df['Ticket_Price_Cr']
+            .astype(str)
+            .str.replace('₹', '', regex=False)
+            .str.replace(',', '', regex=False)
+            .str.strip()
+        )
+
+        df['Ticket_Price_Cr'] = pd.to_numeric(
+            df['Ticket_Price_Cr'],
+            errors='coerce'
+        )
+
+    return df
+
+
+# ------------------------------------------------
+# HANDLE MISSING VALUES
+# ------------------------------------------------
+def handle_missing_values(df):
+
+    if 'Amenity_Score' in df.columns:
+        df['Amenity_Score'].fillna(
+            df['Amenity_Score'].median(),
+            inplace=True
+        )
+
+    if 'Booking_Status' in df.columns:
+        df['Booking_Status'].fillna("Unknown", inplace=True)
+
+    df.drop_duplicates(inplace=True)
+
+    return df
+
+
+# ------------------------------------------------
+# NORMALIZE TEXT
+# ------------------------------------------------
+def normalize_text_columns(df):
+
+    text_cols = [
+        'Builder', 'Micro_Market', 'Configuration',
+        'Possession_Status', 'Sales_Channel', 'Buyer_Type'
+    ]
+
+    for col in text_cols:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip().str.title()
+
+    return df
+
+
+# ------------------------------------------------
+# PRICE PER SQFT
+# ------------------------------------------------
+def create_price_per_sqft(df):
+
+    if 'Unit_Size_Sqft' in df.columns and 'Ticket_Price_Cr' in df.columns:
+
+        df['Price_per_Sqft'] = (
+            df['Ticket_Price_Cr'] * 10000000
+        ) / df['Unit_Size_Sqft']
+
+    else:
+        print("⚠ Unit_Size_Sqft column missing")
+        df['Price_per_Sqft'] = np.nan
+
+    return df
+
+
+# ------------------------------------------------
+# CREATE QUARTER NUMBER (FIXED)
+# ------------------------------------------------
+def create_quarter_number(df):
+
+    print("Creating Quarter Number from Date...")
+
+    if 'Purchase_Quarter' in df.columns:
+
+        # Convert to datetime
+        df['Purchase_Quarter'] = pd.to_datetime(
+            df['Purchase_Quarter'],
+            errors='coerce'
+        )
+
+        # Extract quarter
+        df['Quarter_Number'] = df['Purchase_Quarter'].dt.quarter
+
+    else:
+        df['Quarter_Number'] = np.nan
+
+    return df    
+
+        
+
+
+# ------------------------------------------------
+# BOOKING FLAG
+# ------------------------------------------------
+def create_booking_flag(df):
+
+    if 'Booking_Status' in df.columns:
+        df['Booking_Flag'] = df['Booking_Status'].apply(
+            lambda x: 1 if str(x).lower() == "booked" else 0
+        )
+
+    return df
+
+
+# ------------------------------------------------
+# LOAD TO POSTGRESQL
+# ------------------------------------------------
+def load_to_sql(df):
+
+    print("Connecting to PostgreSQL...")
+
+    engine = create_engine(
+        f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
+
+    df.to_sql(
+        "housing_sales",
+        engine,
+        if_exists="replace",
+        index=False
+    )
+
+    print("✅ Data successfully loaded into PostgreSQL!")
+
+
+# ------------------------------------------------
+# MAIN PIPELINE
+# ------------------------------------------------
+def main():
+
+    df = load_data(RAW_DATA_PATH)
+
+    df = clean_ticket_price(df)
+    df = handle_missing_values(df)
+    df = normalize_text_columns(df)
+
+    df = create_price_per_sqft(df)
+    df = create_quarter_number(df)
+    df = create_booking_flag(df)
+
+    print("Final Dataset Shape:", df.shape)
+
+    load_to_sql(df)
+
+    print("\n✅ ETL Pipeline Completed Successfully!")
+
+
+# ------------------------------------------------
+# RUN PIPELINE
+# ------------------------------------------------
+if __name__ == "__main__":
+    main()
