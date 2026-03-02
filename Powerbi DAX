@@ -1,0 +1,39 @@
+***DAX -Column 1: Booking Status***
+Booking_Status =
+IF(
+    public.housing_sales[Transaction_Type] = "Primary",
+    "Booked",
+    "Not Booked"
+)
+***DAX - Column 2: Booking Flag***
+Booking_Flag =
+IF(public.housing_sales[Transaction_Type] = "Primary",1,0)
+
+*** DAX -Column 3: Quarter Name***
+Quarter =
+"Q" & public.housing_sales[Quarter_Number]
+
+***Create Measures (Dashboard Calculations)***
+Measure 1 — Total Bookings
+
+Total Bookings =
+SUM(public.housing_sales[Booking_Flag])
+Measure 2 — Total Revenue
+
+***Measure 2 — Total Revenue***
+Total Revenue =
+SUM(public.housing_sales[Ticket_Price_Cr])
+
+***Measure 3 — Average Ticket Size***
+Avg Ticket Size =
+AVERAGE(public.housing_sales[Ticket_Price_Cr])
+
+***Measure 4 — Conversion Rate***
+Conversion Rate =
+DIVIDE(
+SUM(public.housing_sales[Booking_Flag]),
+COUNT(public.housing_sales[Property_ID])
+)
+***Measure 5 — Project Count***
+Project Count =
+DISTINCTCOUNT(public.housing_sales[Project_Name])
