@@ -290,8 +290,8 @@ Luxury-Housing-Sales-Analysis
 │
 └── README.md
 ```
-
+**
 Author
 Malaviga Ravi
 Aspiring Data Analyst/Data Scientist
-Skills: Python, SQL, Data Visualization, BI Dashboards
+Skills: Python, SQL, Data Visualization, BI Dashboards**
