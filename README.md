@@ -291,5 +291,7 @@ Luxury-Housing-Sales-Analysis
 └── README.md
 ```
 
-✅ **How to make your GitHub project look like an experienced Data Analyst project (very important for recruiters).**
-
+Author
+Malaviga Ravi
+Aspiring Data Analyst/Data Scientist
+Skills: Python, SQL, Data Visualization, BI Dashboards
